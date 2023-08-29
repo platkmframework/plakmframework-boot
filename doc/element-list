@@ -1,0 +1,9 @@
+org.platkmframework.boot.ioc
+org.platkmframework.boot.jpa.entitymanager
+org.platkmframework.boot.jpa.persistence
+org.platkmframework.boot.jpa.server.filter
+org.platkmframework.boot.jpa.server.listener
+org.platkmframework.boot.server.filter
+org.platkmframework.boot.server.runner
+org.platkmframework.core.test
+org.platkmframework.core.test.domain.dao

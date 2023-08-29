@@ -1,0 +1,166 @@
+<!--
+      Copyright(c) 2023 the original author or authors.
+     
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+     
+           https://www.apache.org/licenses/LICENSE-2.0
+     
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+     
+      Author: 
+        Eduardo Iglesias
+      Contributors: 
+      	Eduardo Iglesias - initial API and implementation
+ -->
+<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/persistence
+    http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd"
+    version="1.0">
+
+    <persistence-unit name="testh2persistenceunit" transaction-type="RESOURCE_LOCAL" > 
+     	<provider>org.platkmframework.jpa.database.manager.PlatkmPersistenceProvider</provider>  
+        <properties>
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:testdb1;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1"/>
+			<property name="javax.persistence.jdbc.password" value="password"/>
+			<property name="javax.persistence.jdbc.user" value="sa"/>
+			<property name="javax.persistence.jdbc.minidle" value = "5"/>
+			<property name="javax.persistence.jdbc.maxidle" value="10"/>     
+			<property name="javax.persistence.jdbc.maxopen" value="100"/> 
+			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
+			<property name="javax.persistence.jdbc.auto.commit"  value="false"/>
+			<property name="javax.persistence.jdbc.default.auto.commit" value="false"/>   	 	
+			<property name="org.platkmframework.format.date.time" value="yyyy-MM-dd-HH.mm.ss"/>   
+			<property name="org.platkmframework.format.date" value="yyyy-MM-dd"/>  
+			<property name="org.platkmframework.format.time" value="HH.mm.ss"/>  
+			<property name="org.platkmframework.database.ddl.create" value="true"/>
+			<property name="org.platkmframework.database.mapper.class" value="org.platkmframework.jpa.database.mapping.h2.H2DatabaseMapper"/>
+			
+			<property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+			<property name="javax.persistence.schema-generation.create-source" value="script"/>
+			<property name="javax.persistence.schema-generation.create-script-source" value="META-INF/sql/schema.sql" /> 
+			<property name="javax.persistence.schema-generation.drop-source" value="script" />
+			<property name="javax.persistence.schema-generation.drop-script-source" value="META-INF/sql/drop.sql" />
+			<property name="javax.persistence.sql-load-script-source" value="META-INF/sql/data.sql" />
+        </properties>
+    </persistence-unit>
+    
+    <persistence-unit name="testh2persistenceunit_2" transaction-type="RESOURCE_LOCAL" > 
+     	<provider>org.platkmframework.jpa.database.manager.PlatkmPersistenceProvider</provider> 
+     	<class>org.platkmframework.test.domain.entity.Person</class>
+        <properties>
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:testdb2;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1"/>
+			<property name="javax.persistence.jdbc.password" value="password"/>
+			<property name="javax.persistence.jdbc.user" value="sa"/>
+			<property name="javax.persistence.jdbc.minidle" value = "5"/>
+			<property name="javax.persistence.jdbc.maxidle" value="10"/>     
+			<property name="javax.persistence.jdbc.maxopen" value="100"/> 
+			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
+			<property name="javax.persistence.jdbc.auto.commit"  value="false"/>
+			<property name="javax.persistence.jdbc.default.auto.commit" value="false"/>   	 	
+			<property name="org.platkmframework.format.date.time" value="yyyy-MM-dd-HH.mm.ss"/>   
+			<property name="org.platkmframework.format.date" value="yyyy-MM-dd"/>  
+			<property name="org.platkmframework.format.time" value="HH.mm.ss"/>  
+			<property name="org.platkmframework.database.ddl.create" value="true"/>
+			<property name="org.platkmframework.database.mapper.class" value="org.platkmframework.jpa.database.mapping.h2.H2DatabaseMapper"/>
+			
+			<property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+			<property name="javax.persistence.schema-generation.create-source" value="metadata"/> 
+			<property name="javax.persistence.schema-generation.drop-source" value="metadata" /> 
+			<property name="javax.persistence.sql-load-script-source" value="META-INF/sql/data.sql" />
+			  
+        </properties>
+    </persistence-unit>
+    
+    <persistence-unit name="testh2persistenceunit3" transaction-type="RESOURCE_LOCAL" > 
+     	<provider>org.platkmframework.jpa.database.manager.PlatkmPersistenceProvider</provider> 
+     	<class>org.platkmframework.test.domain.entity.Person</class>
+        <properties>
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:testdb3;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1"/>
+			<property name="javax.persistence.jdbc.password" value="password"/>
+			<property name="javax.persistence.jdbc.user" value="sa"/>
+			<property name="javax.persistence.jdbc.minidle" value = "5"/>
+			<property name="javax.persistence.jdbc.maxidle" value="10"/>     
+			<property name="javax.persistence.jdbc.maxopen" value="100"/> 
+			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
+			<property name="javax.persistence.jdbc.auto.commit"  value="false"/>
+			<property name="javax.persistence.jdbc.default.auto.commit" value="false"/>   	 	
+			<property name="org.platkmframework.format.date.time" value="yyyy-MM-dd-HH.mm.ss"/>   
+			<property name="org.platkmframework.format.date" value="yyyy-MM-dd"/>  
+			<property name="org.platkmframework.format.time" value="HH.mm.ss"/>  
+			<property name="org.platkmframework.database.ddl.create" value="true"/>
+			<property name="org.platkmframework.database.mapper.class" value="org.platkmframework.jpa.database.mapping.h2.H2DatabaseMapper"/>
+			
+			<property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+			<property name="javax.persistence.schema-generation.create-source" value="script"/>
+			<property name="javax.persistence.schema-generation.create-script-source" value="META-INF/sql/schema.sql" /> 
+			<property name="javax.persistence.schema-generation.drop-source" value="script" />
+			<property name="javax.persistence.schema-generation.drop-script-source" value="META-INF/sql/drop.sql" />
+			<property name="javax.persistence.sql-load-script-source" value="META-INF/sql/data.sql" />
+        </properties>
+    </persistence-unit>
+    
+    <persistence-unit name="testh2persistenceunit4" transaction-type="RESOURCE_LOCAL" > 
+     	<provider>org.platkmframework.jpa.database.manager.PlatkmPersistenceProvider</provider> 
+     	<class>org.platkmframework.test.domain.entity.Person</class>
+        <properties>
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:testdb4;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1"/>
+			<property name="javax.persistence.jdbc.password" value="password"/>
+			<property name="javax.persistence.jdbc.user" value="sa"/>
+			<property name="javax.persistence.jdbc.minidle" value = "5"/>
+			<property name="javax.persistence.jdbc.maxidle" value="10"/>     
+			<property name="javax.persistence.jdbc.maxopen" value="100"/> 
+			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
+			<property name="javax.persistence.jdbc.auto.commit"  value="false"/>
+			<property name="javax.persistence.jdbc.default.auto.commit" value="false"/>   	 	
+			<property name="org.platkmframework.format.date.time" value="yyyy-MM-dd-HH.mm.ss"/>   
+			<property name="org.platkmframework.format.date" value="yyyy-MM-dd"/>  
+			<property name="org.platkmframework.format.time" value="HH.mm.ss"/>  
+			<property name="org.platkmframework.database.ddl.create" value="true"/>
+			<property name="org.platkmframework.database.mapper.class" value="org.platkmframework.jpa.database.mapping.h2.H2DatabaseMapper"/>
+			
+			<property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+			<property name="javax.persistence.schema-generation.create-source" value="script"/>
+			<property name="javax.persistence.schema-generation.create-script-source" value="META-INF/sql/schema.sql" /> 
+			<property name="javax.persistence.schema-generation.drop-source" value="script" />
+			<property name="javax.persistence.schema-generation.drop-script-source" value="META-INF/sql/drop.sql" />
+			<property name="javax.persistence.sql-load-script-source" value="META-INF/sql/data.sql" />
+        </properties>
+    </persistence-unit>
+    
+    <persistence-unit name="testh2persistenceunit5" transaction-type="RESOURCE_LOCAL" > 
+     	<provider>org.platkmframework.jpa.database.manager.PlatkmPersistenceProvider</provider> 
+     	<class>org.platkmframework.test.domain.entity.Person</class>
+        <properties>
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:testdb5;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1"/>
+			<property name="javax.persistence.jdbc.password" value="password"/>
+			<property name="javax.persistence.jdbc.user" value="sa"/>
+			<property name="javax.persistence.jdbc.minidle" value = "5"/>
+			<property name="javax.persistence.jdbc.maxidle" value="10"/>     
+			<property name="javax.persistence.jdbc.maxopen" value="100"/> 
+			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
+			<property name="javax.persistence.jdbc.auto.commit"  value="false"/>
+			<property name="javax.persistence.jdbc.default.auto.commit" value="false"/>   
+				 	
+			<property name="org.platkmframework.format.date.time" value="yyyy-MM-dd-HH.mm.ss"/>   
+			<property name="org.platkmframework.format.date" value="yyyy-MM-dd"/>  
+			<property name="org.platkmframework.format.time" value="HH.mm.ss"/>  
+			<property name="org.platkmframework.database.ddl.create" value="true"/>
+			<property name="org.platkmframework.database.mapper.class" value="org.platkmframework.jpa.database.mapping.h2.H2DatabaseMapper"/>
+			<property name="org.platkmframework.database.querymanagers.path" value="query1.xml,custom/query2.xml"/>
+			
+			<property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+			<property name="javax.persistence.schema-generation.create-source" value="script"/>
+			<property name="javax.persistence.schema-generation.create-script-source" value="META-INF/sql/schema.sql" /> 
+			<property name="javax.persistence.schema-generation.drop-source" value="script" />
+			<property name="javax.persistence.schema-generation.drop-script-source" value="META-INF/sql/drop.sql" />
+			<property name="javax.persistence.sql-load-script-source" value="META-INF/sql/data.sql" />
+        </properties>
+    </persistence-unit>
+</persistence>
