@@ -1,17 +1,20 @@
 /*******************************************************************************
- *   Copyright(c) 2023 the original author or authors.
- *  
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
- *  
- *        https://www.apache.org/licenses/LICENSE-2.0
- *  
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
+ * Copyright(c) 2023 the original author Eduardo Iglesias Taylor.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * 	 https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors:
+ * 	Eduardo Iglesias Taylor - initial API and implementation
  *******************************************************************************/
 package org.platkmframework.boot.server.runner;
 
@@ -34,6 +37,7 @@ import org.platkmframework.annotation.CustomServlet;
 import org.platkmframework.boot.jpa.server.filter.DataBaseFilter;
 import org.platkmframework.boot.server.filter.CORSFilter;
 import org.platkmframework.content.ioc.ObjectContainer;
+import org.platkmframework.core.request.CorePropertyConstant;
 import org.platkmframework.util.DataTypeUtil;
 
 import jakarta.servlet.Filter;
@@ -56,12 +60,12 @@ public class StartServerProcessor {
 	public static Server start(Properties  properties) throws Exception {
 
 			  
-		InetSocketAddress inetSocketAddress = new InetSocketAddress(properties.getProperty("org.platkmframework.server.name"), DataTypeUtil.getIntegerValue(properties.getProperty("org.platkmframework.server.port"),0)); 
+		InetSocketAddress inetSocketAddress = new InetSocketAddress(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_NAME), DataTypeUtil.getIntegerValue(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_PORT),0)); 
 		Server server = new Server(inetSocketAddress);
 		server.setStopAtShutdown(true);
 
-		if(DataTypeUtil.getBooleanValue(properties.getProperty("org.platkmframework.server.active.queue.pool"), false)) {
-			QueuedThreadPool threadPool = new QueuedThreadPool(DataTypeUtil.getIntegerValue(properties.getProperty("org.platkmframework.server.maxthreads"),0), DataTypeUtil.getIntegerValue(properties.getProperty("org.platkmframework.server.minthreads"),0), DataTypeUtil.getIntegerValue(properties.getProperty("org.platkmframework.server.idletimeout"),0)); 
+		if(DataTypeUtil.getBooleanValue(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_ACTIVE_QUEUE_POOL), false)) {
+			QueuedThreadPool threadPool = new QueuedThreadPool(DataTypeUtil.getIntegerValue(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_MAXTHREADS),0), DataTypeUtil.getIntegerValue(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_MINTHREADS),0), DataTypeUtil.getIntegerValue(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_IDLETIMEOUT),0)); 
 			server.addBean(threadPool);
 		}
 		 
@@ -71,7 +75,7 @@ public class StartServerProcessor {
         //webapp.setInitParameter(C_APPLICATION_ENVIRONMENT, StartConfig.getEnvironment());
         webapp.setDisplayName(org.platkmframework.core.request.servlet.RequestManagerServlet.class.getName());
         jakarta.servlet.ServletRegistration.Dynamic dynamic = webapp.getServletContext().addServlet(org.platkmframework.core.request.servlet.RequestManagerServlet.class.getName(),new org.platkmframework.core.request.servlet.RequestManagerServlet());
-        String[] patterns = properties.getProperty("org.platkmframework.server.patterns").split(",");
+        String[] patterns = properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_PATTERNS).split(",");
         dynamic.addMapping(patterns);
         dynamic.setLoadOnStartup(1); 
         dynamic.setAsyncSupported(true);
@@ -105,10 +109,6 @@ public class StartServerProcessor {
              webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, customFilter.pattern()));
        }        
         
-        //listener
-        //webapp.addEventListener(new org.platkmframework.boot.jpa.server.listener.PersistenceListener());
-        //webapp.addEventListener(new org.platkmframework.boot.ioc.BootIOListener());
-        
         
         addContentServlet(webapp, properties);
         
@@ -116,8 +116,8 @@ public class StartServerProcessor {
           
         //webapp.setInitParameter(ServerUtil.C_PARAM_SECRET_KEY, secretKey);
         //(POST)/shutdown?token=
-        if(StringUtils.isNotBlank(properties.getProperty("org.platkmframework.server.stopkey"))) {
-        	Handler[] handlers = {webapp, new ShutdownHandler(properties.getProperty("org.platkmframework.server.stopkey"))};
+        if(StringUtils.isNotBlank(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_STOPKEY))) {
+        	Handler[] handlers = {webapp, new ShutdownHandler(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_STOPKEY))};
         	HandlerCollection handlerCollection = new HandlerCollection();
         	handlerCollection.setHandlers(handlers); 
         	server.setHandler(handlerCollection);  
