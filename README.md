@@ -32,6 +32,16 @@ platform.format.datetime=dd-MM-yyyy:HH:mm
 ```
 ...
 ...
+
+<repositories>
+    ...
+    <repository>
+	<id>platkmframework</id>
+	<name>Releases</name>
+	<url>https://nexus.platkmframework.io/repository/platkmframework-releases/</url>
+   </repository>
+    ...
+</repositories>
   <build>   
     <plugins>
       <plugin>
