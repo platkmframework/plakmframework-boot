@@ -19,9 +19,10 @@
 package org.platkmframework.boot.server.runner;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
- 
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Handler;
@@ -32,16 +33,17 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.platkmframework.annotation.CustomFilter;
-import org.platkmframework.annotation.CustomServlet;
 import org.platkmframework.boot.jpa.server.filter.DataBaseFilter;
 import org.platkmframework.boot.server.filter.CORSFilter;
-import org.platkmframework.content.ioc.ObjectContainer;
-import org.platkmframework.core.request.CorePropertyConstant;
+import org.platkmframework.content.project.CorePropertyConstant;
+import org.platkmframework.content.project.ProjectContent;
+import org.platkmframework.security.content.SecurityFilter;
 import org.platkmframework.util.DataTypeUtil;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 
 
@@ -57,7 +59,7 @@ public class StartServerProcessor {
 	 * @param args
 	 * @throws Exception 
 	 */
-	public static Server start(Properties  properties) throws Exception {
+	public Server start(Properties  properties) throws Exception {
 
 			  
 		InetSocketAddress inetSocketAddress = new InetSocketAddress(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_NAME), DataTypeUtil.getIntegerValue(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_PORT),0)); 
@@ -70,17 +72,23 @@ public class StartServerProcessor {
 		}
 		 
         WebAppContext webapp = new WebAppContext();
-        webapp.	setContextPath("/");  
+        webapp.	setContextPath(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_CONTENT_PATH, "/"));  
         webapp.setResourceBase("");
         //webapp.setInitParameter(C_APPLICATION_ENVIRONMENT, StartConfig.getEnvironment());
         webapp.setDisplayName(org.platkmframework.core.request.servlet.RequestManagerServlet.class.getName());
+        
+        List<String> servletPatterns = addContentServlet(webapp, properties);
+        String[] patternsMainServlet = (properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVLET_PLATH, "") + "/*").split(",");
+        servletPatterns.addAll(Arrays.asList(patternsMainServlet));
+        
         jakarta.servlet.ServletRegistration.Dynamic dynamic = webapp.getServletContext().addServlet(org.platkmframework.core.request.servlet.RequestManagerServlet.class.getName(),new org.platkmframework.core.request.servlet.RequestManagerServlet());
-        String[] patterns = properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_PATTERNS).split(",");
-        dynamic.addMapping(patterns);
+        dynamic.addMapping(patternsMainServlet);
         dynamic.setLoadOnStartup(1); 
         dynamic.setAsyncSupported(true);
-    
         dynamic.setMultipartConfig(getMultipartConfig(properties));
+        
+        String[] patterns = new String[servletPatterns.size()];
+        patterns = servletPatterns.toArray(patterns);
           
         //filter
         Filter filter = new org.eclipse.jetty.servlets.DoSFilter();
@@ -98,26 +106,33 @@ public class StartServerProcessor {
         filter = new DataBaseFilter();
         webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, patterns));
 
-        filter = new org.platkmframework.core.security.filter.SecurityFilter();
+        filter = new  SecurityFilter();
         webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, patterns));  
                 
-        List<Object> custonFilters = ObjectContainer.instance().getListObjectByAnnontation(CustomFilter.class);
-        CustomFilter customFilter;
-        for (Object object : custonFilters) {
+        //List<Object> custonFilters = ObjectContainer.instance().getListObjectByAnnontation(CustomFilter.class);
+        WebFilter webFilter;
+        for (Object object : ProjectContent.instance().getFilters()) {
         	 filter = (Filter) object;
-        	 customFilter = filter.getClass().getAnnotation(CustomFilter.class); 
-             webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, customFilter.pattern()));
+        	 webFilter = filter.getClass().getAnnotation(WebFilter.class); 
+             webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, webFilter.urlPatterns()));
        }        
         
         
-        addContentServlet(webapp, properties);
+       
         
         webapp.setErrorHandler(new CustomErrorHandler());
           
         //webapp.setInitParameter(ServerUtil.C_PARAM_SECRET_KEY, secretKey);
         //(POST)/shutdown?token=
-        if(StringUtils.isNotBlank(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_STOPKEY))) {
+       
+        if(StringUtils.isNotBlank(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_STOPKEY))){
+        	
         	Handler[] handlers = {webapp, new ShutdownHandler(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_STOPKEY))};
+        	HandlerCollection handlerCollection = new HandlerCollection();
+        	handlerCollection.setHandlers(handlers); 
+        	server.setHandler(handlerCollection);  
+        }else {
+        	Handler[] handlers = {webapp};
         	HandlerCollection handlerCollection = new HandlerCollection();
         	handlerCollection.setHandlers(handlers); 
         	server.setHandler(handlerCollection);  
@@ -140,21 +155,26 @@ public class StartServerProcessor {
         return server;
 	}
 
-	private static void addContentServlet(WebAppContext webapp, Properties properties) { 
+	private List<String> addContentServlet(WebAppContext webapp, Properties properties) { 
 		
-		List<Object> list = ObjectContainer.instance().getListObjectByAnnontation(CustomServlet.class);
-		CustomServlet customServlet;
+		List<String> patterns = new ArrayList<>();
+		WebServlet webServletAnnotation;
 		HttpServlet httpServlet;
-		for (Object object : list) {
-			customServlet = object.getClass().getAnnotation(CustomServlet.class);
+		for (Object object : ProjectContent.instance().getServlet()){
 			httpServlet = (HttpServlet)object;
+			webServletAnnotation = httpServlet.getClass().getAnnotation(WebServlet.class); 
 			jakarta.servlet.ServletRegistration.Dynamic dynamic = webapp.getServletContext().addServlet(httpServlet.getClass().getName(), (HttpServlet)object);
-			dynamic.addMapping(customServlet.mappings());
+			dynamic.addMapping(webServletAnnotation.urlPatterns());
 			dynamic.setLoadOnStartup(1);   
+
+			patterns.addAll(Arrays.asList(webServletAnnotation.urlPatterns()));
+			
 		}
+		
+		return patterns;
 	}
 
-	private static MultipartConfigElement getMultipartConfig(Properties properties) {
+	private MultipartConfigElement getMultipartConfig(Properties properties) {
 		return new MultipartConfigElement(
 	            "/tmp",
 	            5242880,
@@ -163,21 +183,19 @@ public class StartServerProcessor {
 	        );
 	}
 
-	private static FilterHolder newFilterHolder(Filter filter, boolean asynSupport) {  
+	private FilterHolder newFilterHolder(Filter filter, boolean asynSupport) {  
         FilterHolder filterHolder = new FilterHolder(filter);
         filterHolder.setName(filter.getClass().getName());
         filterHolder.setAsyncSupported(asynSupport);
 		return filterHolder;
 	}
 
-	private static FilterMapping newFilterMapping(Filter filter, String[] patterns) {
+	private FilterMapping newFilterMapping(Filter filter, String[] patterns) {
 	     FilterMapping filterMapping = new FilterMapping();
 		filterMapping.setFilterName(filter.getClass().getName());
-		filterMapping.setPathSpec(String.join(",", patterns));
+		filterMapping.setPathSpecs(patterns);
+		//filterMapping.setPathSpec(String.join(",", patterns));
 		return filterMapping;
 	}
- 
- 
-
 
 }

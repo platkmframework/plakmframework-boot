@@ -24,7 +24,8 @@ import java.io.IOException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.platkmframework.content.ioc.ObjectContainer; 
+import org.platkmframework.content.ioc.ObjectContainer;
+import org.platkmframework.content.project.CorePropertyConstant;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -66,12 +67,12 @@ public class CORSFilter implements Filter
             throws IOException, ServletException {
  
         HttpServletRequest request = (HttpServletRequest) servletRequest;
-       // System.out.println("CORSFilter HTTP Request: " + request.getMethod());
+        // System.out.println("CORSFilter HTTP Request: " + request.getMethod());
  
         // Authorize (allow) all domains to consume the content
-        ((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Origin", _getControlAllowOrigin(request,ObjectContainer.instance().getPropertyValue("System_Access-Control-Allow-Origin")));
-        ((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Methods", ObjectContainer.instance().getPropertyValue("System_Access-Control-Allow-Methods"));
-        ((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Headers", ObjectContainer.instance().getPropertyValue("System_Access-Control-Allow-Headers"));
+        ((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Origin", _getControlAllowOrigin(request,ObjectContainer.instance().getPropertyValue(CorePropertyConstant.System_Access_Control_Allow_Origin)));
+        ((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Methods", ObjectContainer.instance().getPropertyValue(CorePropertyConstant.System_Access_Control_Allow_Methods));
+        ((HttpServletResponse) servletResponse).addHeader("Access-Control-Allow-Headers", ObjectContainer.instance().getPropertyValue(CorePropertyConstant.System_Access_Control_Allow_Headers));
         
         HttpServletResponse resp = (HttpServletResponse) servletResponse;
  

@@ -19,11 +19,9 @@
 package org.platkmframework.boot.server.runner;
 
 
-import org.apache.commons.lang3.StringUtils;
 import org.platkmframework.content.ioc.ContentPropertiesConstant;
 import org.platkmframework.content.ioc.ObjectContainer;
 import org.platkmframework.content.project.ProjectContent;
-import org.platkmframework.core.rmi.RMIClientProvider;
 import org.platkmframework.core.rmi.RMIServerManager;
 import org.platkmframework.core.scheduler.SchedulerManager;
 import org.platkmframework.jpa.persistence.CustomIoDprocess;
@@ -45,19 +43,15 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
  **/
 public class PlatkmFrameworkApplication {
 
-	public static void main(String[] args) {
+	public static void start(String[] args) {
 		
 		try 
 		{
-			ProjectContent.instance().loadApplicationProperties();
-			String packagesPrefix = ProjectContent.instance().getAppProperties().getProperty(ContentPropertiesConstant.ORG_PLATKMFRAMEWORK_CONFIGURATION_CUSTOM_PROPERTIES_FILE);
-			if(StringUtils.isNotBlank(packagesPrefix)){
-				ProjectContent.instance().loadApplicationProperties(packagesPrefix.split(","));
-			}
 			String javaClassPath  = System.getProperty("java.class.path");
 			
-			packagesPrefix = ProjectContent.instance().getAppProperties().getProperty(ContentPropertiesConstant.ORG_PLATKMFRAMEWORK_CONFIGURATION_PACKAGE_PREFIX);
+			String packagesPrefix = ProjectContent.instance().getAppProperties().getProperty(ContentPropertiesConstant.ORG_PLATKMFRAMEWORK_CONFIGURATION_PACKAGE_PREFIX);
 			packagesPrefix+=",org.platkmframework";
+			
 			ObjectContainer.instance().process(javaClassPath, packagesPrefix.split(","), 
 					ProjectContent.instance().getAppProperties(),
 					new CustomIoDprocess());
@@ -88,13 +82,12 @@ public class PlatkmFrameworkApplication {
 					   .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS) 
 					   .build());
 			
-			
-			
 			RMIServerManager.instance().runAllOnStart();
 			
 			SchedulerManager.instance().runAllOnStart();
 
-			StartServerProcessor.start(ProjectContent.instance().getAppProperties());
+			StartServerProcessor startServerProcessor = new StartServerProcessor();
+			startServerProcessor.start(ProjectContent.instance().getAppProperties());
 			
 		} catch ( Exception e) { 
 			e.printStackTrace();
