@@ -37,7 +37,7 @@ import org.platkmframework.boot.jpa.server.filter.DataBaseFilter;
 import org.platkmframework.boot.server.filter.CORSFilter;
 import org.platkmframework.content.project.CorePropertyConstant;
 import org.platkmframework.content.project.ProjectContent;
-import org.platkmframework.security.content.SecurityFilter;
+import org.platkmframework.security.content.filter.AuthenticationFilter;
 import org.platkmframework.util.DataTypeUtil;
 
 import jakarta.servlet.Filter;
@@ -106,7 +106,7 @@ public class StartServerProcessor {
         filter = new DataBaseFilter();
         webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, patterns));
 
-        filter = new  SecurityFilter();
+        filter = new  AuthenticationFilter();
         webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, patterns));  
                 
         //List<Object> custonFilters = ObjectContainer.instance().getListObjectByAnnontation(CustomFilter.class);
