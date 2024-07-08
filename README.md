@@ -84,7 +84,7 @@ platform.format.datetime=dd-MM-yyyy:HH:mm
  	...
    	<dependency>
   		<groupId>org.platkmframework</groupId>
-  		<artifactId>plakmframework-boot</artifactId>
+  		<artifactId>platkmframework-boot</artifactId>
   		<version>0.1.0-alpha</version>
   	</dependency> 
   	...

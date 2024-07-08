@@ -22,9 +22,7 @@ import java.io.IOException;
  
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.platkmframework.content.ioc.ObjectContainer;
+import org.platkmframework.content.ObjectContainer;
 import org.platkmframework.content.project.CorePropertyConstant;
 
 import jakarta.servlet.Filter;
@@ -37,6 +35,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse; 
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *   Author: 
  *     Eduardo Iglesias
@@ -45,7 +46,7 @@ import jakarta.servlet.http.HttpServletResponse;
  **/  
 public class CORSFilter implements Filter
 {
-	private static final Logger logger = LogManager.getLogger(CORSFilter.class);
+	private static Logger logger = LoggerFactory.getLogger(CORSFilter.class);
 	
 
 	   /**

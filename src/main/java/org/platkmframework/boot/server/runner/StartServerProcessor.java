@@ -25,19 +25,28 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.ShutdownHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlets.DoSFilter;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.platkmframework.boot.jpa.server.filter.DataBaseFilter;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.platkmframework.boot.ioc.BootInversionOfControl;
 import org.platkmframework.boot.server.filter.CORSFilter;
+import org.platkmframework.boot.server.filter.servlet.IndexContentServlet;
+import org.platkmframework.content.ObjectContainer;
+import org.platkmframework.content.project.ContentPropertiesConstant;
 import org.platkmframework.content.project.CorePropertyConstant;
 import org.platkmframework.content.project.ProjectContent;
-import org.platkmframework.security.content.filter.AuthenticationFilter;
+import org.platkmframework.security.content.filter.SecurityApiFilter;
 import org.platkmframework.util.DataTypeUtil;
 
 import jakarta.servlet.Filter;
@@ -45,6 +54,8 @@ import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 
 /**
@@ -54,12 +65,16 @@ import jakarta.servlet.http.HttpServlet;
  *   	Eduardo Iglesias - initial API and implementation
  **/
 public class StartServerProcessor {
+	
+	private static Logger logger = LoggerFactory.getLogger(StartServerProcessor.class);
+	
+	private static final String C_DOS_WHITELIST = "DOS_whitelist";
 	 
 	/** 
 	 * @param args
 	 * @throws Exception 
 	 */
-	public Server start(Properties  properties) throws Exception {
+	public  Server start(Properties  properties) throws Exception {
 
 			  
 		InetSocketAddress inetSocketAddress = new InetSocketAddress(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_NAME), DataTypeUtil.getIntegerValue(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_PORT),0)); 
@@ -72,12 +87,12 @@ public class StartServerProcessor {
 		}
 		 
         WebAppContext webapp = new WebAppContext();
-        webapp.	setContextPath(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_CONTENT_PATH, "/"));  
+        webapp.setContextPath(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_CONTENT_PATH, "/"));  
         webapp.setResourceBase("");
         //webapp.setInitParameter(C_APPLICATION_ENVIRONMENT, StartConfig.getEnvironment());
         webapp.setDisplayName(org.platkmframework.core.request.servlet.RequestManagerServlet.class.getName());
         
-        List<String> servletPatterns = addContentServlet(webapp, properties);
+        List<String> servletPatterns = addContentServlet(webapp);
         String[] patternsMainServlet = (properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVLET_PLATH, "") + "/*").split(",");
         servletPatterns.addAll(Arrays.asList(patternsMainServlet));
         
@@ -87,11 +102,17 @@ public class StartServerProcessor {
         dynamic.setAsyncSupported(true);
         dynamic.setMultipartConfig(getMultipartConfig(properties));
         
+        //String indexPate = properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_CONFIGURATION_INDEX_PAGE);
+        //if(StringUtils.isNotBlank(indexPate))
+       
+        
         String[] patterns = new String[servletPatterns.size()];
         patterns = servletPatterns.toArray(patterns);
           
         //filter
         Filter filter = new org.eclipse.jetty.servlets.DoSFilter();
+        updateDosFilterConfig(properties, (org.eclipse.jetty.servlets.DoSFilter)filter);
+        
         webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, patterns));
         
         filter = new org.eclipse.jetty.servlets.QoSFilter();
@@ -102,11 +123,10 @@ public class StartServerProcessor {
         
         filter = new org.platkmframework.core.request.filter.ExceptionFilter();
         webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, patterns));
+ 
+        addSystemCustomFilter(webapp, patterns);
 
-        filter = new DataBaseFilter();
-        webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, patterns));
-
-        filter = new  AuthenticationFilter();
+        filter = new SecurityApiFilter();
         webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, patterns));  
                 
         //List<Object> custonFilters = ObjectContainer.instance().getListObjectByAnnontation(CustomFilter.class);
@@ -117,45 +137,101 @@ public class StartServerProcessor {
              webapp.getServletHandler().addFilter(newFilterHolder(filter, true), newFilterMapping(filter, webFilter.urlPatterns()));
        }        
         
-        
-       
-        
         webapp.setErrorHandler(new CustomErrorHandler());
           
         //webapp.setInitParameter(ServerUtil.C_PARAM_SECRET_KEY, secretKey);
         //(POST)/shutdown?token=
        
+        List<Handler> handlers = new ArrayList<>();
+        handlers.add(webapp);
+        
         if(StringUtils.isNotBlank(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_STOPKEY))){
-        	
-        	Handler[] handlers = {webapp, new ShutdownHandler(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_STOPKEY))};
-        	HandlerCollection handlerCollection = new HandlerCollection();
-        	handlerCollection.setHandlers(handlers); 
-        	server.setHandler(handlerCollection);  
-        }else {
-        	Handler[] handlers = {webapp};
-        	HandlerCollection handlerCollection = new HandlerCollection();
-        	handlerCollection.setHandlers(handlers); 
-        	server.setHandler(handlerCollection);  
+        	handlers.add(new ShutdownHandler(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_STOPKEY)));
+		}
+        
+        Object obj = ObjectContainer.instance().getCustomInfoByKey(BootInversionOfControl.C_WEBSCOKET_ENDPOINT_CLASS);
+        if(obj != null) {
+        	List<String> webSocketEndPointClasses = (List<String>) obj;
+        	if(!webSocketEndPointClasses.isEmpty()) {
+        		
+        		String appServerPort = properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_PORT);
+        		String appServerWebSocketPort = properties.getProperty(ContentPropertiesConstant.ORG_PLATKMFRAMEWORK_WEBSOKET_SERVER_PORT);
+        		
+        		if(StringUtils.isBlank(appServerWebSocketPort)) appServerWebSocketPort = "8081";
+        		
+        		if(appServerWebSocketPort.trim().equals(appServerPort.trim())) {
+        			logger.error("WebSocket configurarion error -> Los puertos de la aplicación principal y el websocket deben ser diferentes: " + appServerPort);
+        			System.exit(-1);
+        		}
+        			
+        		InetSocketAddress inetSocketAddress1 = new InetSocketAddress(properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_NAME), DataTypeUtil.getIntegerValue(appServerWebSocketPort,0)); 
+        		Server serverWebSocket = new Server(inetSocketAddress1);
+        		serverWebSocket.setStopAtShutdown(true);
+        		
+        		ServletContextHandler handler = new ServletContextHandler(serverWebSocket, "/ctx");
+        		JakartaWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
+            	{
+            	    // Configure the ServerContainer.
+            	    container.setDefaultMaxTextMessageBufferSize(128 * 1024);
+            	    
+            	    Class class1;
+            	    ServerEndpoint serverEndpoint;
+            	    for (String className : webSocketEndPointClasses) {
+            	    	// Simple registration of your WebSocket endpoints.
+            	    	try {
+							class1 = Class.forName(className);
+							//container.addEndpoint(Class.forName(className));
+							serverEndpoint = ((ServerEndpoint) class1.getAnnotation(ServerEndpoint.class));
+							// Advanced registration of your WebSocket endpoints.
+							container.addEndpoint(
+									ServerEndpointConfig.Builder.create(class1, serverEndpoint.value())
+									.subprotocols(List.of("my-ws-protocol"))
+									.build()
+									);
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+						}
+        			}
+
+            	});        	 
+        		serverWebSocket.setHandler(handler);
+        		serverWebSocket.start();
+        	}
         }
-          	
-	        
+    
+        HandlerCollection handlerCollection = new HandlerCollection();
+		handlerCollection.setHandlers(handlers.toArray(new Handler[handlers.size()])); 
+		server.setHandler(handlerCollection);  
+		
+		addIndexServlet(webapp);
         try{
         	
         	server.start();
 			//server.join(); 
-			 
+        	logger.info("Process started...: " + properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_NAME) + ":" + properties.getProperty(CorePropertyConstant.ORG_PLATKMFRAMEWORK_SERVER_PORT, "")) ;
 		} catch (Exception e) 
         {
 			server = null;
 			e.printStackTrace();
-			System.out.print("Process error -> " + e.getMessage());
+			
+			logger.error("Process error -> " + e.getMessage());
 			System.exit(-1);
 		}	  
         
         return server;
 	}
 
-	private List<String> addContentServlet(WebAppContext webapp, Properties properties) { 
+	private void updateDosFilterConfig(Properties properties, DoSFilter filter) {//
+		
+		String DOS_whitelist = properties.contains(C_DOS_WHITELIST)?properties.getProperty(C_DOS_WHITELIST):(System.getenv(C_DOS_WHITELIST)!=null?System.getenv(C_DOS_WHITELIST):"");
+		 if(StringUtils.isNotBlank(DOS_whitelist)) {
+			 filter.setWhitelist(DOS_whitelist);
+		 }
+	}
+
+	public void addSystemCustomFilter(WebAppContext webapp, String[] patterns) {}
+
+	private List<String> addContentServlet(WebAppContext webapp) { 
 		
 		List<String> patterns = new ArrayList<>();
 		WebServlet webServletAnnotation;
@@ -166,7 +242,7 @@ public class StartServerProcessor {
 			jakarta.servlet.ServletRegistration.Dynamic dynamic = webapp.getServletContext().addServlet(httpServlet.getClass().getName(), (HttpServlet)object);
 			dynamic.addMapping(webServletAnnotation.urlPatterns());
 			dynamic.setLoadOnStartup(1);   
-
+			dynamic.setAsyncSupported(true);
 			patterns.addAll(Arrays.asList(webServletAnnotation.urlPatterns()));
 			
 		}
@@ -174,6 +250,14 @@ public class StartServerProcessor {
 		return patterns;
 	}
 
+	private void addIndexServlet(WebAppContext webapp) { 
+//		jakarta.servlet.ServletRegistration.Dynamic dynamic = webapp.getServletContext().addServlet(EmptyRequestManagerServlet.class.getName(), new EmptyRequestManagerServlet());
+		jakarta.servlet.ServletRegistration.Dynamic dynamic = webapp.getServletContext().addServlet(IndexContentServlet.class.getName(), new IndexContentServlet());
+		dynamic.addMapping("/");
+		dynamic.setLoadOnStartup(1);   
+		dynamic.setAsyncSupported(true); 
+	}
+	
 	private MultipartConfigElement getMultipartConfig(Properties properties) {
 		return new MultipartConfigElement(
 	            "/tmp",
@@ -183,14 +267,14 @@ public class StartServerProcessor {
 	        );
 	}
 
-	private FilterHolder newFilterHolder(Filter filter, boolean asynSupport) {  
+	protected FilterHolder newFilterHolder(Filter filter, boolean asynSupport) {  
         FilterHolder filterHolder = new FilterHolder(filter);
         filterHolder.setName(filter.getClass().getName());
         filterHolder.setAsyncSupported(asynSupport);
 		return filterHolder;
 	}
 
-	private FilterMapping newFilterMapping(Filter filter, String[] patterns) {
+	protected FilterMapping newFilterMapping(Filter filter, String[] patterns) {
 	     FilterMapping filterMapping = new FilterMapping();
 		filterMapping.setFilterName(filter.getClass().getName());
 		filterMapping.setPathSpecs(patterns);
